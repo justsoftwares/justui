@@ -26,11 +26,11 @@ func (u *UI) Run() error {
 }
 
 func (u *UI) layout(gtx layout.Context) {
-	u.Layout.RootLayout.Layout(gtx, u.Layout.GetChildren()...)
+	u.Layout.RootLayout.Layout(gtx, u.Layout.Children...)
 }
 
 func (u *UI) handlers(gtx layout.Context) {
-	for _, eh := range u.Layout.GetEventHandlers() {
+	for _, eh := range u.Layout.EventHandlers {
 		if eh.Event() {
 			eh.Handler(gtx)
 		}
