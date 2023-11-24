@@ -9,6 +9,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/justsoftwares/justui"
+	"github.com/justsoftwares/justui/widgets/explorer"
 	"log"
 	"strconv"
 	"strings"
@@ -21,20 +22,25 @@ func main() {
 		app.MinSize(unit.Dp(400), unit.Dp(400)),
 	)
 	t := material.NewTheme()
-	counter := widget.Float{}
-	cb1 := widget.Bool{}
-	btn2 := widget.Clickable{}
-	edt1 := widget.Editor{}
+	counter := &widget.Float{}
+	cb1 := &widget.Bool{}
+	btn2 := &widget.Clickable{}
+	edt1 := &widget.Editor{}
+	var exp *explorer.Explorer
+	exp = explorer.NewExplorer(t, func(_ *justui.UI, _ layout.Context, _ event.Event) {
+		log.Println(exp.Files)
+	})
 	u := justui.NewUI(w, t, func(u *justui.UI, gtx layout.Context) {
 		layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(material.CheckBox(u.Theme, &cb1, "track keys").Layout),
-			layout.Rigid(material.Button(u.Theme, &btn2, "+").Layout),
+			layout.Rigid(material.CheckBox(u.Theme, cb1, "track keys").Layout),
+			layout.Rigid(material.Button(u.Theme, btn2, "+").Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				e := material.Editor(u.Theme, &edt1, "")
+				e := material.Editor(u.Theme, edt1, "")
 				e.TextSize = 100
 				return layout.Center.Layout(gtx, e.Layout)
 			}),
-			layout.Rigid(material.Slider(u.Theme, &counter, 0, 100).Layout),
+			layout.Rigid(material.Slider(u.Theme, counter, 0, 100).Layout),
+			layout.Rigid(exp.SelectFiles()),
 		)
 	})
 	u.AddFrameEventHandlers(justui.EventHandler{
@@ -67,6 +73,7 @@ func main() {
 		Handler: func(u *justui.UI, gtx layout.Context, e event.Event) {
 			edt1.SetText(strconv.FormatFloat(float64(counter.Value), 'f', -1, 32))
 		},
-	})
+	}, exp.DirectoryClickableClickedEvent, exp.SelectClickableClickedEvent)
+
 	u.Run()
 }

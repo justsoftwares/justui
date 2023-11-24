@@ -5,7 +5,9 @@ import (
 	"gioui.org/layout"
 )
 
+type Handler func(u *UI, gtx layout.Context, e event.Event)
+
 type EventHandler struct {
 	Event   func() bool
-	Handler func(u *UI, gtx layout.Context, e event.Event)
+	Handler Handler
 }

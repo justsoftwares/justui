@@ -41,6 +41,16 @@ func (u *UI) AddFrameEventHandlers(handler ...EventHandler) {
 	u.FrameEventHandlers = append(u.FrameEventHandlers, handler...)
 }
 
+func (u *UI) RemoveFrameEventHandlers(handler ...EventHandler) {
+	for _, eventHandler := range handler {
+		for i2, frameEventHandler := range u.FrameEventHandlers {
+			if &eventHandler == &frameEventHandler {
+				u.FrameEventHandlers = append(u.FrameEventHandlers[:i2], u.FrameEventHandlers[i2+1:]...)
+			}
+		}
+	}
+}
+
 func (u *UI) HandleFrameEvents(gtx layout.Context, e event.Event) {
 	for _, eh := range u.FrameEventHandlers {
 		if eh.Event() {
