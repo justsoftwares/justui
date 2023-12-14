@@ -10,36 +10,6 @@ import (
 	"os"
 )
 
-type FileElement struct {
-	Path           string
-	IsSelectedBool *widget.Bool
-	//openClickable             *widget.Clickable
-	//OpenClickableClickedEvent justui.EventHandler // here should to be a any method for handle this events,
-	//												   but now I can`t do it...
-	//explorer                  *Explorer
-}
-
-func NewFileElement(path string) *FileElement {
-	f := &FileElement{
-		Path:           path,
-		IsSelectedBool: &widget.Bool{},
-		//openClickable:  &widget.Clickable{},
-		//explorer:       explorer,
-	}
-	/*f.OpenClickableClickedEvent = justui.EventHandler{
-		Event: f.openClickable.Clicked,
-		Handler: func(_ *justui.UI, _ layout.Context, _ event.Event) {
-			f.explorer.directoryEditor.SetText(f.Path)
-			f.explorer.Refresh()
-		},
-	}*/
-	return f
-}
-
-func (e *FileElement) String() string {
-	return e.Path
-}
-
 type Explorer struct {
 	Theme                                                       *material.Theme
 	Files                                                       []*FileElement
@@ -64,9 +34,9 @@ func NewExplorer(theme *material.Theme, selectClickableClicked justui.Handler) *
 	}
 	e.SelectClickableClickedEvent = justui.EventHandler{
 		Event: e.selectClickable.Clicked,
-		Handler: func(u *justui.UI, gtx layout.Context, evt event.Event) {
+		Handler: func(gtx layout.Context, evt event.Event) {
 			e.Files = e.SelectedFiles(e.Files)
-			selectClickableClicked(u, gtx, evt)
+			selectClickableClicked(gtx, evt)
 		},
 	}
 	e.DirectoryClickableClickedEvent = justui.EventHandler{
@@ -77,7 +47,7 @@ func NewExplorer(theme *material.Theme, selectClickableClicked justui.Handler) *
 	return e
 }
 
-func (e *Explorer) SelectFiles() layout.Widget {
+func (e *Explorer) Widget() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		buttonsWidget := func(gtx layout.Context) layout.Dimensions {
 			return layout.Flex{
@@ -109,7 +79,7 @@ func (e *Explorer) fileList() layout.Widget {
 	}
 }
 
-func (e *Explorer) directoryClickableClicked(_ *justui.UI, _ layout.Context, _ event.Event) {
+func (e *Explorer) directoryClickableClicked(_ layout.Context, _ event.Event) {
 	e.Refresh()
 }
 
@@ -130,7 +100,12 @@ func (e *Explorer) getFilesInDirectory(path string) ([]*FileElement, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer dir.Close()
+	defer func(dir *os.File) {
+		err := dir.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(dir)
 
 	fileInfos, err := dir.Readdir(0)
 	if err != nil {

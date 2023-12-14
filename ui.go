@@ -14,12 +14,12 @@ import (
 type UI struct {
 	Window             *app.Window
 	Theme              *material.Theme
-	Layout             func(u *UI, gtx layout.Context)
+	Layout             func(gtx layout.Context)
 	FrameEventHandlers []EventHandler
-	HandleOtherEvents  func(u *UI, e event.Event, ops *op.Ops)
+	HandleOtherEvents  func(e event.Event, ops *op.Ops)
 }
 
-func NewUI(window *app.Window, theme *material.Theme, layoutFunc func(u *UI, gtx layout.Context)) *UI {
+func NewUI(window *app.Window, theme *material.Theme, layoutFunc func(gtx layout.Context)) *UI {
 	return &UI{
 		Window: window,
 		Theme:  theme,
@@ -54,7 +54,7 @@ func (u *UI) RemoveFrameEventHandlers(handler ...EventHandler) {
 func (u *UI) HandleFrameEvents(gtx layout.Context, e event.Event) {
 	for _, eh := range u.FrameEventHandlers {
 		if eh.Event() {
-			eh.Handler(u, gtx, e)
+			eh.Handler(gtx, e)
 		}
 	}
 }
@@ -69,11 +69,11 @@ func (u *UI) loop() error {
 		case system.FrameEvent:
 			gtx := layout.NewContext(&ops, e)
 			u.HandleFrameEvents(gtx, e)
-			u.Layout(u, gtx)
+			u.Layout(gtx)
 			e.Frame(gtx.Ops)
 		}
 		if u.HandleOtherEvents != nil {
-			u.HandleOtherEvents(u, e, &ops)
+			u.HandleOtherEvents(e, &ops)
 		}
 	}
 
