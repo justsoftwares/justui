@@ -53,7 +53,7 @@ func (u *UI) RemoveFrameEventHandlers(handler ...EventHandler) {
 
 func (u *UI) HandleFrameEvents(gtx layout.Context, e event.Event) {
 	for _, eh := range u.FrameEventHandlers {
-		if eh.Event() {
+		if eh.Event(gtx) {
 			eh.Handler(gtx, e)
 		}
 	}
@@ -62,7 +62,8 @@ func (u *UI) HandleFrameEvents(gtx layout.Context, e event.Event) {
 func (u *UI) loop() error {
 	var ops op.Ops
 
-	for e := range u.Window.Events() {
+	for {
+		e := u.Window.NextEvent()
 		switch e := e.(type) {
 		case system.DestroyEvent:
 			return e.Err
@@ -76,6 +77,4 @@ func (u *UI) loop() error {
 			u.HandleOtherEvents(e, &ops)
 		}
 	}
-
-	return nil
 }

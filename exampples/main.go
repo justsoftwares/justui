@@ -39,17 +39,17 @@ func main() {
 				e.TextSize = 100
 				return layout.Center.Layout(gtx, e.Layout)
 			}),
-			layout.Rigid(material.Slider(t, counter, 0, 100).Layout),
+			layout.Rigid(material.Slider(t, counter).Layout),
 			layout.Rigid(exp.Widget()),
 		)
 	})
 	u.AddFrameEventHandlers(justui.EventHandler{
-		Event: cb1.Pressed,
+		Event: cb1.Update,
 		Handler: func(gtx layout.Context, e event.Event) {
 			cb1.Value = !cb1.Value
 		},
 	}, justui.EventHandler{
-		Event: func() bool {
+		Event: func(gtx layout.Context) bool {
 			return cb1.Value
 		},
 		Handler: func(gtx layout.Context, e event.Event) {
@@ -69,7 +69,7 @@ func main() {
 			edt1.SetText(strconv.FormatFloat(float64(counter.Value), 'f', -1, 32))
 		},
 	}, justui.EventHandler{
-		Event: counter.Changed,
+		Event: counter.Update,
 		Handler: func(gtx layout.Context, e event.Event) {
 			edt1.SetText(strconv.FormatFloat(float64(counter.Value), 'f', -1, 32))
 		},

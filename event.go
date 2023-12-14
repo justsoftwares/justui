@@ -8,6 +8,6 @@ import (
 type Handler func(gtx layout.Context, e event.Event)
 
 type EventHandler struct {
-	Event   func() bool
+	Event   func(gtx layout.Context) bool
 	Handler Handler
 }

@@ -2,7 +2,7 @@ module github.com/justsoftwares/justui
 
 go 1.21
 
-require gioui.org v0.3.1
+require gioui.org v0.4.1
 
 require (
 	gioui.org/cpu v0.0.0-20210817075930-8d6a761490d2 // indirect
