@@ -13,7 +13,27 @@ import (
 type FileElement struct {
 	Path           string
 	IsSelectedBool *widget.Bool
-	OpenClickable  *widget.Clickable // TODO
+	//openClickable             *widget.Clickable
+	//OpenClickableClickedEvent justui.EventHandler // here should to be a any method for handle this events,
+	//												   but now I can`t do it...
+	//explorer                  *Explorer
+}
+
+func NewFileElement(path string) *FileElement {
+	f := &FileElement{
+		Path:           path,
+		IsSelectedBool: &widget.Bool{},
+		//openClickable:  &widget.Clickable{},
+		//explorer:       explorer,
+	}
+	/*f.OpenClickableClickedEvent = justui.EventHandler{
+		Event: f.openClickable.Clicked,
+		Handler: func(_ *justui.UI, _ layout.Context, _ event.Event) {
+			f.explorer.directoryEditor.SetText(f.Path)
+			f.explorer.Refresh()
+		},
+	}*/
+	return f
 }
 
 func (e *FileElement) String() string {
@@ -82,29 +102,28 @@ func (e *Explorer) fileList() layout.Widget {
 			len(e.filesInDir),
 			func(gtx layout.Context, index int) layout.Dimensions {
 				f := e.filesInDir[index]
-				return material.CheckBox(e.Theme, f.IsSelectedBool, f.Path).Layout(gtx)
+
+				return e.fileElement(f, gtx)
 			},
 		)
 	}
 }
 
 func (e *Explorer) directoryClickableClicked(_ *justui.UI, _ layout.Context, _ event.Event) {
-	currentPath := e.directoryEditor.Text()
-
-	if currentPath == "" {
-		return
-	}
-
-	files, err := e.openDirectory(currentPath)
-	if err != nil {
-		log.Println("Error getting files:", err)
-		return
-	}
-	e.Files = e.SelectedFiles(e.Files)
-	e.filesInDir = files
+	e.Refresh()
 }
 
-func (e *Explorer) openDirectory(path string) ([]*FileElement, error) {
+func (e *Explorer) fileElement(f *FileElement, gtx layout.Context) layout.Dimensions {
+	return layout.Flex{
+		Axis: layout.Horizontal,
+	}.Layout(
+		gtx,
+		layout.Rigid(material.CheckBox(e.Theme, f.IsSelectedBool, f.Path).Layout),
+		//layout.Rigid(material.Button(e.Theme, f.openClickable, "Open").Layout),
+	)
+}
+
+func (e *Explorer) getFilesInDirectory(path string) ([]*FileElement, error) {
 	var files []*FileElement
 
 	dir, err := os.Open(path)
@@ -119,10 +138,7 @@ func (e *Explorer) openDirectory(path string) ([]*FileElement, error) {
 	}
 
 	for _, fileInfo := range fileInfos {
-		file := &FileElement{
-			Path:           fileInfo.Name(),
-			IsSelectedBool: &widget.Bool{},
-		}
+		file := NewFileElement(fileInfo.Name())
 		for _, el := range e.Files {
 			if el.Path == fileInfo.Name() {
 				file = el
@@ -133,6 +149,22 @@ func (e *Explorer) openDirectory(path string) ([]*FileElement, error) {
 	}
 
 	return files, nil
+}
+
+func (e *Explorer) Refresh() {
+	currentPath := e.directoryEditor.Text()
+
+	if currentPath == "" {
+		return
+	}
+
+	files, err := e.getFilesInDirectory(currentPath)
+	if err != nil {
+		log.Println("Error getting files:", err)
+		return
+	}
+	e.Files = e.SelectedFiles(e.Files)
+	e.filesInDir = files
 }
 
 func (e *Explorer) SelectedFiles(currentSelected []*FileElement) []*FileElement {
