@@ -75,5 +75,5 @@ func main() {
 		},
 	}, exp.DirectoryClickableClickedEvent, exp.SelectClickableClickedEvent)
 
-	u.Run()
+	u.Run(true)
 }

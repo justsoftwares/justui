@@ -14,5 +14,5 @@ func (e *Explorer) ShowWindow() {
 		)
 	})
 	u.AddFrameEventHandlers(e.SelectClickableClickedEvent, e.DirectoryClickableClickedEvent)
-	u.Run()
+	u.Run(false)
 }
