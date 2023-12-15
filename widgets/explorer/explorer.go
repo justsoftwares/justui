@@ -35,7 +35,7 @@ func NewExplorer(theme *material.Theme, selectClickableClicked justui.Handler) *
 	e.SelectClickableClickedEvent = justui.EventHandler{
 		Event: e.selectClickable.Clicked,
 		Handler: func(gtx layout.Context, evt event.Event) {
-			e.Files = e.SelectedFiles(e.Files)
+			e.Files = e.selectedFiles(e.Files)
 			selectClickableClicked(gtx, evt)
 		},
 	}
@@ -45,6 +45,14 @@ func NewExplorer(theme *material.Theme, selectClickableClicked justui.Handler) *
 	}
 	e.directoryEditor.SetText("C:\\")
 	return e
+}
+
+func (e *Explorer) GetSelectedFiles() []string {
+	var res []string
+	for _, fileElement := range e.Files {
+		res = append(res, fileElement.FullPath())
+	}
+	return res
 }
 
 func (e *Explorer) Widget() layout.Widget {
@@ -63,6 +71,22 @@ func (e *Explorer) Widget() layout.Widget {
 			layout.Rigid(e.fileList()),
 		)
 	}
+}
+
+func (e *Explorer) Refresh() {
+	currentPath := e.directoryEditor.Text()
+
+	if currentPath == "" {
+		return
+	}
+
+	files, err := e.getFilesInDirectory(currentPath)
+	if err != nil {
+		log.Println("Error getting files:", err)
+		return
+	}
+	e.Files = e.selectedFiles(e.Files)
+	e.filesInDir = files
 }
 
 func (e *Explorer) fileList() layout.Widget {
@@ -88,7 +112,7 @@ func (e *Explorer) fileElement(f *FileElement, gtx layout.Context) layout.Dimens
 		Axis: layout.Horizontal,
 	}.Layout(
 		gtx,
-		layout.Rigid(material.CheckBox(e.Theme, f.IsSelectedBool, f.Path).Layout),
+		layout.Rigid(material.CheckBox(e.Theme, f.IsSelectedBool, f.Name).Layout),
 		//layout.Rigid(material.Button(e.Theme, f.openClickable, "Open").Layout),
 	)
 }
@@ -113,9 +137,9 @@ func (e *Explorer) getFilesInDirectory(path string) ([]*FileElement, error) {
 	}
 
 	for _, fileInfo := range fileInfos {
-		file := NewFileElement(fileInfo.Name())
+		file := NewFileElement(dir.Name(), fileInfo.Name())
 		for _, el := range e.Files {
-			if el.Path == fileInfo.Name() {
+			if el.Name == fileInfo.Name() {
 				file = el
 				break
 			}
@@ -126,23 +150,7 @@ func (e *Explorer) getFilesInDirectory(path string) ([]*FileElement, error) {
 	return files, nil
 }
 
-func (e *Explorer) Refresh() {
-	currentPath := e.directoryEditor.Text()
-
-	if currentPath == "" {
-		return
-	}
-
-	files, err := e.getFilesInDirectory(currentPath)
-	if err != nil {
-		log.Println("Error getting files:", err)
-		return
-	}
-	e.Files = e.SelectedFiles(e.Files)
-	e.filesInDir = files
-}
-
-func (e *Explorer) SelectedFiles(currentSelected []*FileElement) []*FileElement {
+func (e *Explorer) selectedFiles(currentSelected []*FileElement) []*FileElement {
 	for _, fileInDir := range e.filesInDir {
 		exist := false
 		for csI, csFile := range currentSelected {
