@@ -30,6 +30,7 @@ func main() {
 	exp = explorer.NewExplorer(t, func(_ layout.Context, _ event.Event) {
 		log.Println(exp.Files)
 	})
+	showExpBtn := &widget.Clickable{}
 	u := justui.NewUI(w, t, func(gtx layout.Context) {
 		layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(material.CheckBox(t, cb1, "track keys").Layout),
@@ -40,7 +41,7 @@ func main() {
 				return layout.Center.Layout(gtx, e.Layout)
 			}),
 			layout.Rigid(material.Slider(t, counter).Layout),
-			layout.Rigid(exp.Widget()),
+			layout.Rigid(material.Button(t, showExpBtn, "Select Files").Layout),
 		)
 	})
 	u.AddFrameEventHandlers(justui.EventHandler{
@@ -73,7 +74,12 @@ func main() {
 		Handler: func(gtx layout.Context, e event.Event) {
 			edt1.SetText(strconv.FormatFloat(float64(counter.Value), 'f', -1, 32))
 		},
-	}, exp.DirectoryClickableClickedEvent, exp.SelectClickableClickedEvent)
+	}, justui.EventHandler{
+		Event: showExpBtn.Clicked,
+		Handler: func(gtx layout.Context, e event.Event) {
+			exp.ShowWindow()
+		},
+	})
 
 	u.Run(true)
 }

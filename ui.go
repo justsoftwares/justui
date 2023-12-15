@@ -27,16 +27,18 @@ func NewUI(window *app.Window, theme *material.Theme, layoutFunc func(gtx layout
 	}
 }
 
-func (u *UI) Run(exit bool) {
+func (u *UI) Run(isMain bool) {
 	go func() {
 		if err := u.loop(); err != nil {
 			log.Fatal(err)
 		}
-		if exit {
+		if isMain {
 			os.Exit(0)
 		}
 	}()
-	app.Main()
+	if isMain {
+		app.Main()
+	}
 }
 
 func (u *UI) AddFrameEventHandlers(handler ...EventHandler) {
