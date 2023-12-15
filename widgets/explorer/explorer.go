@@ -1,7 +1,9 @@
 package explorer
 
 import (
+	"gioui.org/app"
 	"gioui.org/io/event"
+	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -11,13 +13,13 @@ import (
 )
 
 type Explorer struct {
-	Theme                                                       *material.Theme
-	Files                                                       []*FileElement
-	filesInDir                                                  []*FileElement
-	listWidget                                                  *widget.List
-	directoryEditor                                             *widget.Editor
-	directoryClickable, selectClickable                         *widget.Clickable
-	DirectoryClickableClickedEvent, SelectClickableClickedEvent justui.EventHandler
+	Theme                               *material.Theme
+	Files                               []*FileElement
+	UI                                  *justui.UI
+	filesInDir                          []*FileElement
+	listWidget                          *widget.List
+	directoryEditor                     *widget.Editor
+	directoryClickable, selectClickable *widget.Clickable
 }
 
 func NewExplorer(theme *material.Theme, selectClickableClicked justui.Handler) *Explorer {
@@ -32,22 +34,60 @@ func NewExplorer(theme *material.Theme, selectClickableClicked justui.Handler) *
 		directoryClickable: &widget.Clickable{},
 		selectClickable:    &widget.Clickable{},
 	}
-	e.SelectClickableClickedEvent = justui.EventHandler{
+	e.directoryEditor.SetText("C:\\")
+	e.createUI()
+	e.UI.AddFrameEventHandlers(justui.EventHandler{
 		Event: e.selectClickable.Clicked,
 		Handler: func(gtx layout.Context, evt event.Event) {
-			e.Files = e.SelectedFiles(e.Files)
+			e.Files = e.selectedFiles(e.Files)
 			selectClickableClicked(gtx, evt)
+			e.UI.Window.Perform(system.ActionClose)
 		},
-	}
-	e.DirectoryClickableClickedEvent = justui.EventHandler{
+	}, justui.EventHandler{
 		Event:   e.directoryClickable.Clicked,
 		Handler: e.directoryClickableClicked,
-	}
-	e.directoryEditor.SetText("C:\\")
+	})
 	return e
 }
 
-func (e *Explorer) Widget() layout.Widget {
+func (e *Explorer) GetSelectedFiles() []string {
+	var res []string
+	for _, fileElement := range e.Files {
+		res = append(res, fileElement.FullPath())
+	}
+	return res
+}
+
+func (e *Explorer) Refresh() {
+	currentPath := e.directoryEditor.Text()
+
+	if currentPath == "" {
+		return
+	}
+
+	files, err := e.getFilesInDirectory(currentPath)
+	if err != nil {
+		log.Println("Error getting files:", err)
+		return
+	}
+	e.Files = e.selectedFiles(e.Files)
+	e.filesInDir = files
+}
+
+func (e *Explorer) Run() {
+	e.UI.Run(false)
+}
+
+func (e *Explorer) createUI() {
+	e.UI = justui.NewUI(app.NewWindow(), e.Theme, func(gtx layout.Context) {
+		layout.Flex{Axis: layout.Vertical}.Layout(
+			gtx,
+			layout.Rigid(e.widget()),
+		)
+	})
+}
+
+func (e *Explorer) widget() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		buttonsWidget := func(gtx layout.Context) layout.Dimensions {
 			return layout.Flex{
@@ -79,18 +119,34 @@ func (e *Explorer) fileList() layout.Widget {
 	}
 }
 
-func (e *Explorer) directoryClickableClicked(_ layout.Context, _ event.Event) {
-	e.Refresh()
-}
-
 func (e *Explorer) fileElement(f *FileElement, gtx layout.Context) layout.Dimensions {
 	return layout.Flex{
 		Axis: layout.Horizontal,
 	}.Layout(
 		gtx,
-		layout.Rigid(material.CheckBox(e.Theme, f.IsSelectedBool, f.Path).Layout),
+		layout.Rigid(material.CheckBox(e.Theme, f.IsSelectedBool, f.Name).Layout),
 		//layout.Rigid(material.Button(e.Theme, f.openClickable, "Open").Layout),
 	)
+}
+
+func (e *Explorer) selectedFiles(currentSelected []*FileElement) []*FileElement {
+	for _, fileInDir := range e.filesInDir {
+		exist := false
+		for csI, csFile := range currentSelected {
+			if csFile == fileInDir {
+				if fileInDir.IsSelectedBool.Value {
+					exist = true
+				} else {
+					currentSelected = append(currentSelected[:csI], currentSelected[csI+1:]...)
+				}
+				break
+			}
+		}
+		if !exist && fileInDir.IsSelectedBool.Value {
+			currentSelected = append(currentSelected, fileInDir)
+		}
+	}
+	return currentSelected
 }
 
 func (e *Explorer) getFilesInDirectory(path string) ([]*FileElement, error) {
@@ -113,9 +169,9 @@ func (e *Explorer) getFilesInDirectory(path string) ([]*FileElement, error) {
 	}
 
 	for _, fileInfo := range fileInfos {
-		file := NewFileElement(fileInfo.Name())
+		file := NewFileElement(dir.Name(), fileInfo.Name())
 		for _, el := range e.Files {
-			if el.Path == fileInfo.Name() {
+			if el.Name == fileInfo.Name() {
 				file = el
 				break
 			}
@@ -126,38 +182,6 @@ func (e *Explorer) getFilesInDirectory(path string) ([]*FileElement, error) {
 	return files, nil
 }
 
-func (e *Explorer) Refresh() {
-	currentPath := e.directoryEditor.Text()
-
-	if currentPath == "" {
-		return
-	}
-
-	files, err := e.getFilesInDirectory(currentPath)
-	if err != nil {
-		log.Println("Error getting files:", err)
-		return
-	}
-	e.Files = e.SelectedFiles(e.Files)
-	e.filesInDir = files
-}
-
-func (e *Explorer) SelectedFiles(currentSelected []*FileElement) []*FileElement {
-	for _, fileInDir := range e.filesInDir {
-		exist := false
-		for csI, csFile := range currentSelected {
-			if csFile == fileInDir {
-				if fileInDir.IsSelectedBool.Value {
-					exist = true
-				} else {
-					currentSelected = append(currentSelected[:csI], currentSelected[csI+1:]...)
-				}
-				break
-			}
-		}
-		if !exist && fileInDir.IsSelectedBool.Value {
-			currentSelected = append(currentSelected, fileInDir)
-		}
-	}
-	return currentSelected
+func (e *Explorer) directoryClickableClicked(_ layout.Context, _ event.Event) {
+	e.Refresh()
 }
