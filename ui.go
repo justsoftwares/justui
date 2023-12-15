@@ -27,12 +27,14 @@ func NewUI(window *app.Window, theme *material.Theme, layoutFunc func(gtx layout
 	}
 }
 
-func (u *UI) Run() {
+func (u *UI) Run(exit bool) {
 	go func() {
 		if err := u.loop(); err != nil {
 			log.Fatal(err)
 		}
-		os.Exit(0)
+		if exit {
+			os.Exit(0)
+		}
 	}()
 	app.Main()
 }
