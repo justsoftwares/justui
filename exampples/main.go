@@ -77,7 +77,7 @@ func main() {
 	}, justui.EventHandler{
 		Event: showExpBtn.Clicked,
 		Handler: func(gtx layout.Context, e event.Event) {
-			exp.ShowWindow()
+			exp.Run()
 		},
 	})
 

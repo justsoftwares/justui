@@ -42,5 +42,5 @@ func (f *FileElement) FullPath() string {
 	return fmt.Sprintf("%s%c%s", f.Root, os.PathSeparator, f.Name)
 }
 
-//func (f *FileElement) Widget() {
+//func (f *FileElement) widget() {
 //}
