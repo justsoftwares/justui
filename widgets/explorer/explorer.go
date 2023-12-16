@@ -20,6 +20,7 @@ type Explorer struct {
 	listWidget                          *widget.List
 	directoryEditor                     *widget.Editor
 	directoryClickable, selectClickable *widget.Clickable
+	selectClickableClicked              justui.Handler
 }
 
 func NewExplorer(theme *material.Theme, selectClickableClicked justui.Handler) *Explorer {
@@ -30,23 +31,12 @@ func NewExplorer(theme *material.Theme, selectClickableClicked justui.Handler) *
 				Axis: layout.Vertical,
 			},
 		},
-		directoryEditor:    &widget.Editor{},
-		directoryClickable: &widget.Clickable{},
-		selectClickable:    &widget.Clickable{},
+		directoryEditor:        &widget.Editor{},
+		directoryClickable:     &widget.Clickable{},
+		selectClickable:        &widget.Clickable{},
+		selectClickableClicked: selectClickableClicked,
 	}
 	e.directoryEditor.SetText("C:\\")
-	e.createUI()
-	e.UI.AddFrameEventHandlers(justui.EventHandler{
-		Event: e.selectClickable.Clicked,
-		Handler: func(gtx layout.Context, evt event.Event) {
-			e.Files = e.selectedFiles(e.Files)
-			selectClickableClicked(gtx, evt)
-			e.UI.Window.Perform(system.ActionClose)
-		},
-	}, justui.EventHandler{
-		Event:   e.directoryClickable.Clicked,
-		Handler: e.directoryClickableClicked,
-	})
 	return e
 }
 
@@ -75,6 +65,18 @@ func (e *Explorer) Refresh() {
 }
 
 func (e *Explorer) Run() {
+	e.createUI()
+	e.UI.AddFrameEventHandlers(justui.EventHandler{
+		Event: e.selectClickable.Clicked,
+		Handler: func(gtx layout.Context, evt event.Event) {
+			e.Files = e.selectedFiles(e.Files)
+			e.selectClickableClicked(gtx, evt)
+			e.UI.Window.Perform(system.ActionClose)
+		},
+	}, justui.EventHandler{
+		Event:   e.directoryClickable.Clicked,
+		Handler: e.directoryClickableClicked,
+	})
 	e.UI.Run(false)
 }
 
@@ -82,12 +84,12 @@ func (e *Explorer) createUI() {
 	e.UI = justui.NewUI(app.NewWindow(), e.Theme, func(gtx layout.Context) {
 		layout.Flex{Axis: layout.Vertical}.Layout(
 			gtx,
-			layout.Rigid(e.widget()),
+			layout.Rigid(e.layout()),
 		)
 	})
 }
 
-func (e *Explorer) widget() layout.Widget {
+func (e *Explorer) layout() layout.Widget {
 	return func(gtx layout.Context) layout.Dimensions {
 		buttonsWidget := func(gtx layout.Context) layout.Dimensions {
 			return layout.Flex{
