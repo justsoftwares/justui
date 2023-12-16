@@ -8,21 +8,14 @@ import (
 type Form struct {
 	Theme        *material.Theme
 	Title        string
-	rootLayout   *layout.Flex
 	SubmitButton layout.Widget
 	Fields       []*Field
 }
 
-func NewForm(theme *material.Theme, title string, rootLayout *layout.Flex, submitButton layout.Widget, fields ...*Field) *Form {
-	if rootLayout == nil {
-		rootLayout = &layout.Flex{
-			Axis: layout.Vertical,
-		}
-	}
+func NewForm(theme *material.Theme, title string, submitButton layout.Widget, fields ...*Field) *Form {
 	return &Form{
 		Theme:        theme,
 		Title:        title,
-		rootLayout:   rootLayout,
 		SubmitButton: submitButton,
 		Fields:       fields,
 	}
